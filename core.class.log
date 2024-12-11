@@ -1,0 +1,44 @@
+[handleMsg]:  {
+  key: {
+    remoteJid: '573185305870@s.whatsapp.net',
+    fromMe: false,
+    id: '3FA57BFCED56E384DFAE',
+    participant: undefined
+  },
+  messageTimestamp: 1733925091,
+  pushName: '.',
+  broadcast: false,
+  message: Message {
+    extendedTextMessage: ExtendedTextMessage { text: 'hola', contextInfo: [ContextInfo] },
+    messageContextInfo: MessageContextInfo {
+      deviceListMetadata: [DeviceListMetadata],
+      deviceListMetadataVersion: 2
+    }
+  },
+  body: 'hola',
+  from: '573185305870'
+}
+[QUEUE_SE_ENVIO]:  {
+  ref: 'ans_054b8c09-0c27-4f1e-bff3-8c75009b85b1',
+  keyword: 'key_518e0b63-cb9e-4772-8eb0-d2c367e2e25a',
+  answer: '🙌 Bienvenido a *Chat-TIC*!\n' +
+    'Elige una de las siguientes opciones:\n' +
+    '1️⃣ *Reservar Teatro*\n' +
+    '2️⃣ *Soporte*\n' +
+    '3️⃣ *Redes*\n' +
+    '\n' +
+    'Envía el número de la opción que deseas.',
+  options: {
+    media: null,
+    buttons: [],
+    capture: false,
+    child: null,
+    delay: 0,
+    idle: null,
+    ref: null,
+    nested: [ [Object], [Object], [Object], [Object], [Object], [Object] ],
+    keyword: {},
+    callback: false
+  },
+  refSerialize: '42dde35b62544b166449e60934bdfb0e'
+}
