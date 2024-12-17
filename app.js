@@ -100,8 +100,9 @@ crearTablas();
 // Opción 1: Reservar teatro
 const flowReservarTeatro = addKeyword(['1', 'reservar', 'teatro']).addAnswer([ 
     '🎭 Has seleccionado *Reservar Teatro*.', 
-    'Por favor, proporciona la fecha y hora que deseas reservar.', 
+    'Por favor, proporciona la fecha y hora que deseas reservar en este formato (DD-MM-AAAA HH:MM) .', 
 ]);
+
 
 // Opción 2: Soporte
 const flowSoporte = addKeyword(['2', 'soporte']).addAnswer([ 
