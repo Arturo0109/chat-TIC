@@ -33,28 +33,25 @@ connection.connect((err) => {
     console.log('Conexión establecida con la base de datos');
 });
 
+// Obtener las citas disponibles de la base de datos
+let citasDisponibles = [];
+
+const obtenerCitasDisponibles = () => {
+    return new Promise((resolve, reject) => {
+        const query = 'SELECT * FROM citas WHERE ocupado = FALSE';
+        connection.query(query, (err, results) => {
+            if (err) {
+                console.error('Error al obtener las citas:', err);
+                reject(err);
+            }
+            citasDisponibles = results; // Guardar las citas obtenidas en la variable global
+            resolve(results);
+        });
+    });
+};
+
 // Crear las tablas si no existen
 const crearTablas = () => {
-    // Sentencia para crear la tabla 'personas'
-    const queryPersonas = `
-        CREATE TABLE IF NOT EXISTS personas (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            nombre VARCHAR(255) NOT NULL
-        );
-    `;
-    
-    // Sentencia para crear la tabla 'soporte'
-    const querySoporte = `
-        CREATE TABLE IF NOT EXISTS soporte (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            descripcion TEXT NOT NULL,
-            lugar VARCHAR(255) NOT NULL,
-            idPersonal INT,
-            FOREIGN KEY (idPersonal) REFERENCES personas(id)
-        );
-    `;
-    
-    // Sentencia para crear la tabla 'citas'
     const queryCitas = `
         CREATE TABLE IF NOT EXISTS citas (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -64,23 +61,6 @@ const crearTablas = () => {
         );
     `;
     
-    // Ejecutar cada consulta por separado
-    connection.query(queryPersonas, (err, results) => {
-        if (err) {
-            console.error('Error creando la tabla personas:', err);
-            return;
-        }
-        console.log('Tabla personas creada con éxito');
-    });
-
-    connection.query(querySoporte, (err, results) => {
-        if (err) {
-            console.error('Error creando la tabla soporte:', err);
-            return;
-        }
-        console.log('Tabla soporte creada con éxito');
-    });
-
     connection.query(queryCitas, (err, results) => {
         if (err) {
             console.error('Error creando la tabla citas:', err);
@@ -93,33 +73,40 @@ const crearTablas = () => {
 // Llamar a la función para crear las tablas
 crearTablas();
 
-/**
- * Flujos del chatbot
- */
-
-// Opción 1: Reservar teatro
+// Flujo para mostrar las citas disponibles
 const flowReservarTeatro = addKeyword(['1', 'reservar', 'teatro']).addAnswer([ 
-    '🎭 Has seleccionado *Reservar Teatro*.', 
-    'Por favor, proporciona la fecha y hora que deseas reservar en este formato (DD-MM-AAAA HH:MM) .', 
-]);
+    '🎭 Has seleccionado *Reservar Teatro*.',
+    'Estas son las citas disponibles para reservar:'
+], async (ctx) => {
+    try {
+        // Verificar si ya se han obtenido las citas
+        if (citasDisponibles.length === 0) {
+            // Si no se han obtenido, hacer la consulta y guardar las citas
+            await obtenerCitasDisponibles();
+        }
 
+        if (citasDisponibles.length === 0) {
+            ctx.reply('⚠️ Actualmente no hay citas disponibles. Intenta más tarde.');
+        } else {
+            // Crear el texto con todas las citas disponibles
+            let citasText = citasDisponibles.map((cita, index) => {
+                // Formatear las fechas y horas para mostrarlo de manera más legible
+                const fecha = new Date(cita.fecha);
+                const hora = new Date(cita.hora);
+                return `${index + 1}. Fecha: ${fecha.toLocaleDateString()} Hora: ${hora.toLocaleTimeString()}`;
+            }).join('\n');
+            
+            ctx.reply(`Estas son las citas disponibles:\n\n${citasText}\n\nPor favor, selecciona el número de la cita que deseas reservar.`);
+        }
+    } catch (error) {
+        ctx.reply('❌ Hubo un error al obtener las citas disponibles. Por favor, inténtalo de nuevo más tarde.');
+        console.error('Error al obtener las citas:', error);
+    }
+});
 
-// Opción 2: Soporte
-const flowSoporte = addKeyword(['2', 'soporte']).addAnswer([ 
-    '🛠️ Has seleccionado *Soporte*.', 
-    'Por favor, describe brevemente tu problema para ayudarte.', 
-]);
-
-// Opción 3: Redes
-const flowRedes = addKeyword(['3', 'redes']).addAnswer([ 
-    '🌐 Has seleccionado *Redes*.', 
-    'Síguenos en nuestras redes sociales:', 
-    '- Facebook: https://facebook.com', 
-    '- Instagram: https://instagram.com', 
-    '- Twitter: https://twitter.com', 
-]);
-
-// Flujo principal
+/**
+ * Flujo principal
+ */
 const flowPrincipal = addKeyword(['hola', 'buenas', 'chat-tic', 'Hola']).addAnswer( 
     [ 
         '🙌 Bienvenido a *Chat-TIC*!', 
@@ -131,7 +118,7 @@ const flowPrincipal = addKeyword(['hola', 'buenas', 'chat-tic', 'Hola']).addAnsw
     ], 
     null, 
     null, 
-    [flowReservarTeatro, flowSoporte, flowRedes] 
+    [flowReservarTeatro]
 );
 
 /**
@@ -157,4 +144,9 @@ const main = async () => {
     QRPortalWeb();
 };
 
-main();
+// Obtener citas antes de iniciar el bot
+obtenerCitasDisponibles().then(() => {
+    main();
+}).catch((error) => {
+    console.error('Error al obtener las citas al inicio:', error);
+});
