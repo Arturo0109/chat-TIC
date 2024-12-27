@@ -57,35 +57,32 @@ const crearTablas = () => {
 
 // Llamar a la función para crear las tablas
 crearTablas();
-
-// Flujo para mostrar las citas disponibles
 const flowReservarTeatro = addKeyword(['1', 'reservar', 'teatro'])
-    .addAnswer('🎭 Has seleccionado *Reservar Teatro*.', 'Estas son las fechas disponibles para reservar el teatro:', async (ctx, { flowDynamic }) => {
-        // Consultar las citas disponibles (no ocupadas)
-        const query = 'SELECT fecha, hora FROM citas WHERE ocupado = FALSE';
-        
-        connection.query(query, async (err, results) => {  // Aquí usamos async/await para las consultas
-            if (err) {
-                console.error('Error al consultar las citas:', err);
-                await flowDynamic([{ body: 'Lo siento, hubo un problema al obtener las citas disponibles.' }]);
-                return;
-            }
+.addAnswer('🎭 Has seleccionado *Reservar Teatro*.', 'Estas son las fechas disponibles para reservar el teatro:', async (ctx, { flowDynamic }) => {
+    // Consultar las citas disponibles (no ocupadas)
+    const query = 'SELECT id, fecha, hora FROM citas WHERE ocupado = FALSE';
+    
+    connection.query(query, async (err, results) => {  // Aquí usamos async/await para las consultas
+        if (err) {
+            console.error('Error al consultar las citas:', err);
+            await flowDynamic([{ body: 'Lo siento, hubo un problema al obtener las citas disponibles.' }]);
+            return;
+        }
 
-            if (results.length === 0) {
-                await flowDynamic([{ body: 'No hay citas disponibles en este momento.' }]);
-                return;
-            }
+        if (results.length === 0) {
+            await flowDynamic([{ body: 'No hay citas disponibles en este momento.' }]);
+            return;
+        }
 
-            // Crear los mensajes dinámicos con las fechas y horas disponibles
-            const mensajes = results.map(cita => ({
-                body: `Fecha: ${cita.fecha}, Hora: ${cita.hora}`
-            }));
+        // Crear los mensajes dinámicos con las fechas y horas disponibles
+        const mensajes = results.map(cita => ({
+            body: `ID: ${cita.id},Fecha: ${cita.fecha}, Hora: ${cita.hora}`
+        }));
 
-            // Enviar los mensajes dinámicos con las citas disponibles
-            await flowDynamic(mensajes);  // Asegúrate de usar await aquí
-        });
+        // Enviar los mensajes dinámicos con las citas disponibles
+        await flowDynamic(mensajes);  // Asegúrate de usar await aquí
     });
-
+});
 const flowSoporte = addKeyword(['2', 'soporte']).addAnswer([ 
     '🛠️ Has seleccionado *Soporte*.', 
     'Por favor, describe brevemente tu problema para ayudarte.', 
