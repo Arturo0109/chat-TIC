@@ -1,4 +1,4 @@
-const { createBot, createProvider, createFlow, addKeyword } = require('@bot-whatsapp/bot');
+const { createBot, createProvider, createFlow, addKeyword, addAction } = require('@bot-whatsapp/bot');
 const QRPortalWeb = require('@bot-whatsapp/portal');
 const BaileysProvider = require('@bot-whatsapp/provider/baileys');
 const MySQLAdapter = require('@bot-whatsapp/database/mysql');
@@ -33,22 +33,7 @@ connection.connect((err) => {
     console.log('Conexión establecida con la base de datos');
 });
 
-// Obtener las citas disponibles de la base de datos
-let citasDisponibles = [];
 
-const obtenerCitasDisponibles = () => {
-    return new Promise((resolve, reject) => {
-        const query = 'SELECT * FROM citas WHERE ocupado = FALSE';
-        connection.query(query, (err, results) => {
-            if (err) {
-                console.error('Error al obtener las citas:', err);
-                reject(err);
-            }
-            citasDisponibles = results; // Guardar las citas obtenidas en la variable global
-            resolve(results);
-        });
-    });
-};
 
 // Crear las tablas si no existen
 const crearTablas = () => {
@@ -74,52 +59,52 @@ const crearTablas = () => {
 crearTablas();
 
 // Flujo para mostrar las citas disponibles
-const flowReservarTeatro = addKeyword(['1', 'reservar', 'teatro']).addAnswer([ 
-    '🎭 Has seleccionado *Reservar Teatro*.',
-    'Estas son las citas disponibles para reservar:'
-], async (ctx) => {
-    try {
-        // Verificar si ya se han obtenido las citas
-        if (citasDisponibles.length === 0) {
-            // Si no se han obtenido, hacer la consulta y guardar las citas
-            await obtenerCitasDisponibles();
-        }
+const flowReservarTeatro = addKeyword(['1', 'reservar', 'teatro'])
+    .addAnswer('🎭 Has seleccionado *Reservar Teatro*.', 'Estas son las fechas disponibles para reservar el teatro:', async (ctx, { flowDynamic }) => {
+        // Consultar las citas disponibles (no ocupadas)
+        const query = 'SELECT fecha, hora FROM citas WHERE ocupado = FALSE';
+        
+        connection.query(query, async (err, results) => {  // Aquí usamos async/await para las consultas
+            if (err) {
+                console.error('Error al consultar las citas:', err);
+                await flowDynamic([{ body: 'Lo siento, hubo un problema al obtener las citas disponibles.' }]);
+                return;
+            }
 
-        if (citasDisponibles.length === 0) {
-            ctx.reply('⚠️ Actualmente no hay citas disponibles. Intenta más tarde.');
-        } else {
-            // Crear el texto con todas las citas disponibles
-            let citasText = citasDisponibles.map((cita, index) => {
-                // Formatear las fechas y horas para mostrarlo de manera más legible
-                const fecha = new Date(cita.fecha);
-                const hora = new Date(cita.hora);
-                return `${index + 1}. Fecha: ${fecha.toLocaleDateString()} Hora: ${hora.toLocaleTimeString()}`;
-            }).join('\n');
-            
-            ctx.reply(`Estas son las citas disponibles:\n\n${citasText}\n\nPor favor, selecciona el número de la cita que deseas reservar.`);
-        }
-    } catch (error) {
-        ctx.reply('❌ Hubo un error al obtener las citas disponibles. Por favor, inténtalo de nuevo más tarde.');
-        console.error('Error al obtener las citas:', error);
-    }
-});
+            if (results.length === 0) {
+                await flowDynamic([{ body: 'No hay citas disponibles en este momento.' }]);
+                return;
+            }
 
-/**
- * Flujo principal
- */
+            // Crear los mensajes dinámicos con las fechas y horas disponibles
+            const mensajes = results.map(cita => ({
+                body: `Fecha: ${cita.fecha}, Hora: ${cita.hora}`
+            }));
+
+            // Enviar los mensajes dinámicos con las citas disponibles
+            await flowDynamic(mensajes);  // Asegúrate de usar await aquí
+        });
+    });
+
+const flowSoporte = addKeyword(['2', 'soporte']).addAnswer([ 
+    '🛠️ Has seleccionado *Soporte*.', 
+    'Por favor, describe brevemente tu problema para ayudarte.', 
+]);
+
+
 const flowPrincipal = addKeyword(['hola', 'buenas', 'chat-tic', 'Hola']).addAnswer( 
     [ 
         '🙌 Bienvenido a *Chat-TIC*!', 
         'Elige una de las siguientes opciones:', 
         '1️⃣ *Reservar Teatro*', 
         '2️⃣ *Soporte*', 
-        '3️⃣ *Redes*', 
         '\nEnvía el número de la opción que deseas.', 
     ], 
     null, 
     null, 
-    [flowReservarTeatro]
+    [flowReservarTeatro, flowSoporte]
 );
+
 
 /**
  * Configuración principal del bot
@@ -144,9 +129,4 @@ const main = async () => {
     QRPortalWeb();
 };
 
-// Obtener citas antes de iniciar el bot
-obtenerCitasDisponibles().then(() => {
-    main();
-}).catch((error) => {
-    console.error('Error al obtener las citas al inicio:', error);
-});
+main();
