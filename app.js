@@ -80,9 +80,26 @@ const flowReservarTeatro = addKeyword(['1', 'reservar', 'teatro'])
         }));
 
         // Enviar los mensajes dinámicos con las citas disponibles
+        await flowDynamic([{ body: 'Selecciona una fecha usando el ID.' }]);
         await flowDynamic(mensajes);  // Asegúrate de usar await aquí
     });
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const flowSoporte = addKeyword(['2', 'soporte']).addAnswer([ 
     '🛠️ Has seleccionado *Soporte*.', 
     'Por favor, describe brevemente tu problema para ayudarte.', 
